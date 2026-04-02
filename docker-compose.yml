@@ -1,10 +1,33 @@
 services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: imbalance
+      POSTGRES_USER: imbalance
+      POSTGRES_PASSWORD: imbalance
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U imbalance"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   dashboard:
     build: .
     ports:
       - "8501:8501"
+    environment:
+      DATABASE_URL: postgresql://imbalance:imbalance@db:5432/imbalance
+    depends_on:
+      db:
+        condition: service_healthy
     develop:
       watch:
         - action: sync
           path: ./src
           target: /app/src
+
+volumes:
+  postgres_data:

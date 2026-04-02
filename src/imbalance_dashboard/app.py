@@ -1,3 +1,5 @@
+import os
+
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -6,7 +8,21 @@ from imbalance_dashboard.offline import OfflineDataLoader
 st.set_page_config(page_title="Elia Imbalance Prices", layout="wide")
 st.title("Belgian Imbalance Prices — Elia")
 
-df = OfflineDataLoader().load()
+if os.environ.get("DATABASE_URL"):
+    from imbalance_dashboard.db import PostgresDataLoader
+
+    loader = PostgresDataLoader()
+    df = loader.load()
+    if df.empty:
+        # Seed the database with offline data on first run
+        from imbalance_dashboard.offline import OfflineDataLoader as _Offline
+
+        df = _Offline().load()
+        loader.save(df)
+    data_source = "PostgreSQL"
+else:
+    df = OfflineDataLoader().load()
+    data_source = "Offline (test data)"
 
 # ── KPIs ──────────────────────────────────────────────────────────────────────
 latest = df.iloc[-1]
@@ -16,7 +32,7 @@ col2.metric("MIP (€/MWh)", f"{latest['mip_eur_mwh']:.2f}")
 col3.metric("MDP (€/MWh)", f"{latest['mdp_eur_mwh']:.2f}")
 col4.metric("NRV (MW)", f"{latest['nrv_mw']:.1f}")
 
-st.caption(f"Last quarter: {latest['datetime'].strftime('%Y-%m-%d %H:%M')} UTC  •  Offline (test data)")
+st.caption(f"Last quarter: {latest['datetime'].strftime('%Y-%m-%d %H:%M')} UTC  •  {data_source}")
 
 # ── Imbalance prices chart ────────────────────────────────────────────────────
 fig_prices = go.Figure()
