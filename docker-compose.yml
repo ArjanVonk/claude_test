@@ -6,5 +6,5 @@ services:
     develop:
       watch:
         - action: sync
-          path: ./app.py
-          target: /app/app.py
+          path: ./src
+          target: /app/src
