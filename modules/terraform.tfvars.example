@@ -1,0 +1,5 @@
+subscription_id     = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+location            = "westeurope"
+resource_group_name = "rg-imbalance-dashboard"
+acr_name            = "acrimbalancedashboard"  # must be globally unique
+image_tag           = "latest"
