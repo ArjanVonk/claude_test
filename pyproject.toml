@@ -24,3 +24,7 @@ dev = [
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+addopts = "-vv -s"
+markers = [
+    "integration: marks tests that require Docker (deselect with -m 'not integration')",
+]
