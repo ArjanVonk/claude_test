@@ -98,14 +98,12 @@ def truncate_table(postgres):
 def test_save_and_load_roundtrip(postgres):
     """Save synthetic rows to postgres and verify the full roundtrip."""
     original = OfflineDataLoader(seed=42, periods=24).load()
-    logger.info("Generated %d synthetic rows (seed=42, periods=24)", len(original))
+    logger.info("Generated %d synthetic rows", len(original))
     logger.info("First 3 rows:\n%s", original.head(3).to_string(index=False))
 
     loader = PostgresDataLoader(dsn=postgres)
     loader.save(original)
     logger.info("Saved %d rows to PostgreSQL.", len(original))
-
-    _docker_logs()
 
     loaded = loader.load()
     logger.info("Loaded %d rows back from PostgreSQL.", len(loaded))
@@ -124,12 +122,10 @@ def test_save_and_load_roundtrip(postgres):
         )
         logger.info("Column '%s' matches exactly.", col)
 
-    # Datetimes: postgres returns tz-aware; compare as UTC
+    # postgres returns tz-aware datetimes; OfflineDataLoader produces tz-naive
     orig_dt = original["datetime"].dt.tz_localize("UTC")
     assert list(loaded["datetime"]) == list(orig_dt), "Datetime column mismatch"
     logger.info("Datetime column matches.")
-
-    logger.info("=== Roundtrip test PASSED (%d rows) ===", len(loaded))
 
 
 @pytest.mark.integration
@@ -138,22 +134,17 @@ def test_upsert_does_not_duplicate(postgres):
     df = OfflineDataLoader(seed=7, periods=10).load()
     loader = PostgresDataLoader(dsn=postgres)
 
-    logger.info("First save (%d rows)…", len(df))
     loader.save(df)
-    count_after_first = len(loader.load())
+    count_after_first = loader.count()
     logger.info("Row count after first save: %d", count_after_first)
 
-    logger.info("Second save (same data — should upsert, not insert)…")
     loader.save(df)
-    count_after_second = len(loader.load())
+    count_after_second = loader.count()
     logger.info("Row count after second save: %d", count_after_second)
-
-    _docker_logs()
 
     assert count_after_second == count_after_first, (
         f"Upsert created duplicates: {count_after_first} → {count_after_second}"
     )
-    logger.info("=== Upsert dedup test PASSED ===")
 
 
 @pytest.mark.integration
@@ -167,11 +158,10 @@ def test_random_seed_produces_different_data(postgres):
 
     df_b = OfflineDataLoader(seed=2, periods=8).load()
     loader.save(df_b)
-    logger.info("Saved seed=2 data (upserting %d rows; datetimes may overlap).", len(df_b))
+    logger.info("Saved seed=2 data (%d rows).", len(df_b))
 
     all_rows = loader.load()
-    logger.info("Total rows in db after both saves: %d", len(all_rows))
+    logger.info("Total rows after both saves: %d", len(all_rows))
     logger.info("Full table:\n%s", all_rows.to_string(index=False))
 
     assert len(all_rows) > 0, "Expected rows in the database"
-    logger.info("=== Seed-diversity test PASSED ===")

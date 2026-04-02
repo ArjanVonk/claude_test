@@ -14,10 +14,7 @@ if os.environ.get("DATABASE_URL"):
     loader = PostgresDataLoader()
     df = loader.load()
     if df.empty:
-        # Seed the database with offline data on first run
-        from imbalance_dashboard.offline import OfflineDataLoader as _Offline
-
-        df = _Offline().load()
+        df = OfflineDataLoader().load()
         loader.save(df)
     data_source = "PostgreSQL"
 else:
