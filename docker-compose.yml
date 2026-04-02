@@ -1,0 +1,10 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    develop:
+      watch:
+        - action: sync
+          path: ./app.py
+          target: /app/app.py
